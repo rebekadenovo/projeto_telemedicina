@@ -10,15 +10,14 @@ Projeto final da disciplina **Implementação de Bancos de Dados NoSQL**. A apli
 | Agenda do dia | Um agendamento por paciente e um por horário na agenda compartilhada. Os horários aceitam intervalos de 30 minutos. |
 | Prontuário | Consulta ao cadastro, registro e edição de diagnósticos e envio e download de laudos em PDF de até 5 MB. |
 | Grafo clínico | Mapa do paciente no Neo4j, diagnósticos relacionados em até 3 passos, histórico de medicamentos, simulação de prescrição com alertas de interação e contraindicação e lista de pacientes em risco. |
-
-A finalização da consulta está prevista para a próxima etapa.
+| Finalização da consulta | Escolha do paciente em atendimento, profissional, diagnósticos e receita com alertas do grafo na hora. Ao finalizar, grava a consulta e a receita em PDF no MongoDB, registra o atendimento no Neo4j e encerra a sessão no Redis. |
 
 ## Arquitetura
 
 | Banco | Papel na aplicação |
 | --- | --- |
 | MongoDB Atlas | Armazena pacientes, profissionais, especialidades, diagnósticos, laudos e agendamentos. |
-| Redis Cloud | Ordena a fila com um Sorted Set, mantém tokens de sessão e guarda a agenda do dia em cache por cinco minutos. |
+| Redis Cloud | Ordena a fila com um Sorted Set, mantém tokens de sessão, guarda a agenda do dia em cache por cinco minutos e registra os atendidos do dia num Sorted Set. |
 | Neo4j AuraDB | Relaciona pacientes, prontuários, profissionais, diagnósticos e medicamentos e gera alertas com consultas Cypher. Guarda só identificadores e nomes, e o cadastro completo continua no MongoDB. |
 
 ## Executar no Windows
@@ -55,6 +54,13 @@ A carga do MongoDB cria o índice único de `paciente_id` e insere os cadastros 
 6. Selecione Helena (`PAC001`), que usa varfarina e losartana. Em **Simular prescrição**, escolha **Ibuprofeno**: aparecem um alerta grave e um moderado, e o remédio entra tracejado no mapa. Troque por **Paracetamol** e os alertas somem.
 7. Confira os casos prontos: Rafael (`PAC004`) com **Tramadol**, Beatriz (`PAC005`, asma) com **Propranolol**, Antônio (`PAC002`) com **Espironolactona** e Camila (`PAC003`) com **Rifampicina**.
 8. Abra **Diagnósticos relacionados** em Antônio ou Diego (`PAC010`) para ver as cadeias de até 3 passos, e a aba **Consultas Cypher** para mostrar o código. Use **Pesquisar por → Profissional** para ver os pacientes de cada médica.
+9. Para o ciclo completo, volte à **Recepção Virtual**, adicione Helena e clique em **Iniciar próximo atendimento**.
+10. Em **Finalização da Consulta**, Helena aparece como em andamento. Escolha o diagnóstico **I10** e o medicamento **Ibuprofeno**: os mesmos alertas do grafo aparecem, e o alerta grave pede confirmação antes de finalizar. Preencha a posologia e clique em **Finalizar consulta**.
+11. Baixe a receita em PDF. Confira o resultado nos três bancos: a consulta e a receita no **Prontuário** (MongoDB), o novo atendimento no **Grafo Clínico** (Neo4j) e o painel de atendimentos de hoje, com a sessão encerrada (Redis).
+
+### Ordem das gravações na finalização
+
+O MongoDB grava primeiro, depois o Neo4j e por último o Redis. O `atendimento_id` vem do token da sessão aberta na recepção, então todas as gravações usam a mesma chave. Se um banco falhar no meio, a sessão continua aberta e o botão pode ser clicado de novo sem duplicar a consulta, a receita, os diagnósticos ou o atendimento no grafo.
 
 ## Modelo do grafo
 

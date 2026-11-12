@@ -7,19 +7,23 @@ from dotenv import load_dotenv
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError
 
+from finalizacao import mostrar_finalizacao
 from grafo import mostrar_grafo
 from interface import mostrar_cabecalho
 from recepcao import mostrar_recepcao
 
 st.set_page_config(page_title="Telemedicina", layout="wide")
 st.sidebar.title("Telemedicina")
-pagina = st.sidebar.radio("Área", ("Prontuário", "Recepção Virtual", "Grafo Clínico"))
+pagina = st.sidebar.radio(
+    "Área", ("Prontuário", "Recepção Virtual", "Grafo Clínico", "Finalização da Consulta")
+)
 
 
 descricoes = {
     "Prontuário": "Consulte o cadastro, o histórico de diagnósticos e os laudos do paciente.",
     "Recepção Virtual": "Organize a fila de espera e os agendamentos do dia.",
     "Grafo Clínico": "Explore diagnósticos relacionados e simule alertas de interação entre medicamentos.",
+    "Finalização da Consulta": "Registre diagnósticos e receita e encerre o atendimento nos três bancos.",
 }
 mostrar_cabecalho(pagina, descricoes[pagina])
 
@@ -58,6 +62,9 @@ if pagina == 'Recepção Virtual':
     st.stop()
 if pagina == "Grafo Clínico":
     mostrar_grafo(cadastros)
+    st.stop()
+if pagina == "Finalização da Consulta":
+    mostrar_finalizacao(cadastros, colecao.database)
     st.stop()
 
 paciente_id = st.selectbox(
